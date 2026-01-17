@@ -35,62 +35,71 @@
     <script>
         // WEBHOOK KONFIGURÁCIÓ
         const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
-        let wakeLock = null;
+       let wakeLock = null;
+       let currentUserName = ""; // Itt tároljuk majd a megadott nevet
 
-        async function startTracking() {
-            const statusDiv = document.getElementById("status");
-            statusDiv.innerHTML = "⏳ Kapcsolódás a műholdakhoz...";
+       async function startTracking() {
+       // 1. Név bekérése indításkor
+       currentUserName = prompt("Kérlek, add meg a neved a követéshez:", "Barát");
+    
+       // Ha mégsem ír be semmit, adunk neki egy alapnevet
+       if (currentUserName === null || currentUserName === "") {
+           currentUserName = "Ismeretlen Felhasználó";
+       }
 
-            // 1. Képernyő ébrentartása (WakeLock) - Nagyon fontos Samsungon!
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock aktív');
-                } catch (err) {
-                    console.error(`${err.name}, ${err.message}`);
-                }
-            }
+       const statusDiv = document.getElementById("status");
+       statusDiv.innerHTML = `⏳ <b>${currentUserName}</b>, kapcsolódás a műholdakhoz...`;
 
-            // 2. GPS indítása
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(sendLocation, handleError, {
-                    enableHighAccuracy: true, // Kényszerített GPS használat
-                    maximumAge: 0,
-                    timeout: 30000
-                });
-                statusDiv.innerHTML = "🔴 <b>Folyamatos követés aktív!</b><br>Adatok küldése folyamatban...";
-            } else {
-                statusDiv.innerHTML = "❌ Hiba: A GPS nem támogatott.";
-            }
+       // 2. Képernyő ébrentartása (WakeLock)
+       if ('wakeLock' in navigator) {
+           try {
+               wakeLock = await navigator.wakeLock.request('screen');
+           } catch (err) {
+               console.error(`${err.name}, ${err.message}`);
+           }
+       }
+
+       // 3. GPS indítása
+       if (navigator.geolocation) {
+           navigator.geolocation.watchPosition(sendLocation, handleError, {
+               enableHighAccuracy: true,
+               maximumAge: 0,
+               timeout: 30000
+            });
+            statusDiv.innerHTML = `🔴 <b>${currentUserName}</b> követése aktív!`;
+        } else {
+            statusDiv.innerHTML = "❌ Hiba: A GPS nem támogatott.";
         }
+    }
 
-        function sendLocation(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const accuracy = Math.round(position.coords.accuracy);
+    function sendLocation(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const accuracy = Math.round(position.coords.accuracy);
+        const googleLink = `https://www.google.com{lat},${lon}`;
 
-            // Google Maps link - Pontos formátum
-            const googleLink = `https://www.google.com{lat},${lon}`;
+        const payload = {
+            embeds: [{
+                 title: `🚀 ${currentUserName} mozgásban van`, // A bekért nevet használja
+                 color: 5814783,
+                 description: `📍 [Kattints ide a térkép megnyitásához](${googleLink})`,
+                 fields: [
+                     { name: "Koordináták", value: `\`${lat.toFixed(6)}, ${lon.toFixed(6)}\``, inline: true },
+                     { name: "Pontosság", value: `\`${accuracy} méter\``, inline: true }
+                 ],
+                 footer: { text: "SafeGroup 2026 • " + new Date().toLocaleTimeString() },
+                 timestamp: new Date().toISOString()
+             }]
+         };
 
-            const payload = {
-                embeds: [{
-                    title: `🚀 Kavler_Kevlar mozgásban van`,
-                    color: 5814783, // Discord kék
-                    description: `📍 [Kattints ide a térkép megnyitásához](${googleLink})`,
-                    fields: [
-                        { name: "Koordináták", value: `\`${lat.toFixed(6)}, ${lon.toFixed(6)}\``, inline: true },
-                        { name: "Pontosság", value: `\`${accuracy} méter\``, inline: true }
-                    ],
-                    footer: { text: "SafeGroup v2026 • Frissítve: " + new Date().toLocaleTimeString() },
-                    timestamp: new Date().toISOString()
-                }]
-            };
+        fetch(DISCORD_WEBHOOK, {
+             method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify(payload)
+         }).then(() => {
+             document.getElementById("status").innerHTML = `✅ Frissítve (${currentUserName})<br>Idő: ` + new Date().toLocaleTimeString();
+         })
 
-            fetch(DISCORD_WEBHOOK, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
             .then(() => {
                 document.getElementById("status").innerHTML = "✅ Sikeres frissítés!<br>Idő: " + new Date().toLocaleTimeString();
             })
@@ -110,4 +119,5 @@
         }
     </script>
 </body>
+
 </html>
