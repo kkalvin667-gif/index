@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Biztonsági Tracker</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #2c2f33; color: white; padding: 50px; }
+        .btn { background: #7289da; border: none; padding: 15px; color: white; border-radius: 5px; cursor: pointer; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Biztonsági Követés</h1>
+    <p>A gomb megnyomásával a csoport tagjai látni fogják a helyzetedet.</p>
+    <button class="btn" onclick="startTracking()">Követés indítása</button>
+    <div id="status">Készen áll...</div>
+
+    <script>
+        const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078767714275390/OUrLAeGu-Pby2mR1yzW6camLFAjmMazqfvQ7Xl66H-sG0QcZetakhtix8uMKIOvF6L2h";
+        let userName = prompt("Mi a neved?");
+
+        function startTracking() {
+            if (navigator.geolocation) {
+                // watchPosition: folyamatosan követ, ha elmozdul a telefon
+                navigator.geolocation.watchPosition(sendToDiscord, handleError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 30000,
+                    timeout: 27000
+                });
+                document.getElementById("status").textContent = "🔴 Követés aktív...";
+            }
+        }
+
+        function sendToDiscord(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const mapUrl = `https://www.google.com{lat},${lon}`;
+
+            const payload = {
+                content: `📍 **${userName}** biztonságban van. Aktuális helyzet: ${mapUrl}`
+            };
+
+            fetch(DISCORD_WEBHOOK, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        function handleError(err) {
+            console.warn(`Hiba (${err.code}): ${err.message}`);
+        }
+    </script>
+</body>
+</html>
