@@ -3,88 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biztonsági Tracker 2026</title>
+    <title>SafeGroup Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #23272a; color: white; padding: 20px; }
-        .container { background: #2c2f33; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); max-width: 400px; margin: auto; }
-        .btn { background: #57f287; border: none; padding: 15px 30px; color: black; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 18px; transition: 0.3s; }
-        .btn:hover { background: #3ba55c; transform: scale(1.05); }
-        #status { margin-top: 20px; color: #b9bbbe; font-style: italic; }
+        body { font-family: sans-serif; text-align: center; background: #23272a; color: white; padding-top: 50px; }
+        .btn { background: #5865F2; border: none; padding: 20px; color: white; border-radius: 10px; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛡️ SafeGroup</h1>
-        <p>A gomb megnyomásával megosztod a helyzeted a csoporttal.</p>
-        <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
-        <div id="status">Készen áll a küldésre...</div>
-    </div>
+    <h1>🛡️ Helyzetmegosztás</h1>
+    <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
+    <p id="status">Várakozás...</p>
 
     <script>
-        // IDE MÁSOLD A DISCORD WEBHOOK URL-EDET!
-        const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078767714275390/OUrLAeGu-Pby2mR1yzW6camLFAjmMazqfvQ7Xl66H-sG0QcZetakhtix8uMKIOvF6L2h";
-        
-        let userName = prompt("Add meg a neved a követéshez:", "Barát");
-        if(!userName) userName = "Ismeretlen";
+        // ELLENŐRIZD: Pontosan másold be a Webhook URL-t az idézőjelek közé!
+        const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
 
         function startTracking() {
-            if (navigator.geolocation) {
-                // watchPosition figyeli a mozgást
-                navigator.geolocation.watchPosition(updateLocation, handleError, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 10000
-                });
-                document.getElementById("status").textContent = "🔴 Követés aktív... Ne zárd be az ablakot!";
-            } else {
-                alert("A böngésződ nem támogatja a GPS-t.");
+            document.getElementById("status").textContent = "GPS engedély kérése...";
+            
+            if (!navigator.geolocation) {
+                alert("Hiba: A böngésződ nem támogatja a GPS-t!");
+                return;
             }
-        }
 
-        function updateLocation(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const accuracy = Math.round(position.coords.accuracy);
-
-            // 1. Cím lekérése (Reverse Geocoding)
-            fetch(`https://api.bigdatacloud.net{lat}&longitude=${lon}&localityLanguage=hu`)
-            .then(res => res.json())
-            .then(data => {
-                const address = data.city + ", " + (data.locality || "");
-                sendToDiscord(lat, lon, address, accuracy);
+            // Egyszeri lekérés teszteléshez
+            navigator.geolocation.getCurrentPosition(sendToDiscord, handleError, {
+                enableHighAccuracy: true
             });
         }
 
-        function sendToDiscord(lat, lon, address, accuracy) {
-            const googleLink = `https://www.google.com{lat},${lon}`;
-            const mapImage = `https://static-maps.yandex.ru{lon},${lat}&z=15&l=map&pt=${lon},${lat},pm2rdl`;
+        function sendToDiscord(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            
+            document.getElementById("status").textContent = "Küldés a Discordra...";
 
             const payload = {
-                embeds: [{
-                    title: `📍 ${userName} friss helyzete`,
-                    description: `**Cím:** ${address}\n**Pontosság:** ${accuracy} méter`,
-                    url: googleLink,
-                    color: 5763719, // Zöld szín
-                    image: { url: mapImage }, // Itt a kép a térképről
-                    timestamp: new Date().toISOString(),
-                    footer: { text: "SafeGroup v2026 - Folyamatos frissítés" }
-                }]
+                content: `📍 **Új helyzetérkezés!**\nGoogle Maps: https://www.google.com{lat},${lon}`
             };
 
             fetch(DISCORD_WEBHOOK, {
                 method: "POST",
-                headers: { 'Content-Type': 'application/json' },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById("status").textContent = "✅ Siker! Adat elküldve.";
+                } else {
+                    document.getElementById("status").textContent = "❌ Hiba: A Discord elutasította (Rossz Webhook?)";
+                }
+            })
+            .catch(error => {
+                alert("Hálózati hiba történt küldéskor: " + error);
+                document.getElementById("status").textContent = "❌ Hiba a küldés során.";
             });
         }
 
-        function handleError(err) {
-            console.warn("GPS hiba: " + err.message);
-            document.getElementById("status").textContent = "Hiba történt a GPS lekérésekor.";
+        function handleError(error) {
+            let msg = "";
+            switch(error.code) {
+                case error.PERMISSION_DENIED: msg = "Megtagadtad a GPS hozzáférést."; break;
+                case error.POSITION_UNAVAILABLE: msg = "A helyadatok nem elérhetőek."; break;
+                case error.TIMEOUT: msg = "Időtúllépés a GPS lekérésekor."; break;
+                default: msg = "Ismeretlen hiba történt."; break;
+            }
+            alert(msg);
+            document.getElementById("status").textContent = "Hiba: " + msg;
         }
     </script>
 </body>
 </html>
+
 
 
 
