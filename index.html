@@ -2,62 +2,89 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Biztonsági Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biztonsági Tracker 2026</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #2c2f33; color: white; padding: 50px; }
-        .btn { background: #7289da; border: none; padding: 15px; color: white; border-radius: 5px; cursor: pointer; }
-        #status { margin-top: 20px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #23272a; color: white; padding: 20px; }
+        .container { background: #2c2f33; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); max-width: 400px; margin: auto; }
+        .btn { background: #57f287; border: none; padding: 15px 30px; color: black; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        .btn:hover { background: #3ba55c; transform: scale(1.05); }
+        #status { margin-top: 20px; color: #b9bbbe; font-style: italic; }
     </style>
 </head>
 <body>
-    <h1>🛡️ Biztonsági Követés</h1>
-    <p>A gomb megnyomásával a csoport tagjai látni fogják a helyzetedet.</p>
-    <button class="btn" onclick="startTracking()">Követés indítása</button>
-    <div id="status">Készen áll...</div>
+    <div class="container">
+        <h1>🛡️ SafeGroup</h1>
+        <p>A gomb megnyomásával megosztod a helyzeted a csoporttal.</p>
+        <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
+        <div id="status">Készen áll a küldésre...</div>
+    </div>
 
     <script>
+        // IDE MÁSOLD A DISCORD WEBHOOK URL-EDET!
         const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078767714275390/OUrLAeGu-Pby2mR1yzW6camLFAjmMazqfvQ7Xl66H-sG0QcZetakhtix8uMKIOvF6L2h";
-        let userName = prompt("Mi a Discord felhasználód!");
+        
+        let userName = prompt("Add meg a neved a követéshez:", "Barát");
+        if(!userName) userName = "Ismeretlen";
 
         function startTracking() {
             if (navigator.geolocation) {
-                // watchPosition: folyamatosan követ, ha elmozdul a telefon
-                navigator.geolocation.watchPosition(sendToDiscord, handleError, {
+                // watchPosition figyeli a mozgást
+                navigator.geolocation.watchPosition(updateLocation, handleError, {
                     enableHighAccuracy: true,
-                    maximumAge: 30000,
-                    timeout: 27000
+                    maximumAge: 0,
+                    timeout: 10000
                 });
-                document.getElementById("status").textContent = "🔴 Követés aktív...";
+                document.getElementById("status").textContent = "🔴 Követés aktív... Ne zárd be az ablakot!";
+            } else {
+                alert("A böngésződ nem támogatja a GPS-t.");
             }
         }
 
-function sendToDiscord(position) {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
+        function updateLocation(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const accuracy = Math.round(position.coords.accuracy);
 
-    // Cím lekérése a koordináták alapján
-    fetch(`https://api.bigdatacloud.net{lat}&longitude=${lon}&localityLanguage=hu`)
-    .then(res => res.json())
-    .then(data => {
-        const address = data.locality + ", " + (data.principalSubdivision || "") + " " + (data.city || "");
-        
-        const payload = {
-            content: `📢 **${userName}** helyzete:\n🏠 Cím: **${address}**\n📍 Pontos koordináta: ${lat}, ${lon}\n🔗 [Google Maps megnyitása](https://www.google.com{lat},${lon})`
-        };
-
-        fetch(DISCORD_WEBHOOK, {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            // 1. Cím lekérése (Reverse Geocoding)
+            fetch(`https://api.bigdatacloud.net{lat}&longitude=${lon}&localityLanguage=hu`)
+            .then(res => res.json())
+            .then(data => {
+                const address = data.city + ", " + (data.locality || "");
+                sendToDiscord(lat, lon, address, accuracy);
+            });
         }
-    }
-        
+
+        function sendToDiscord(lat, lon, address, accuracy) {
+            const googleLink = `https://www.google.com{lat},${lon}`;
+            const mapImage = `https://static-maps.yandex.ru{lon},${lat}&z=15&l=map&pt=${lon},${lat},pm2rdl`;
+
+            const payload = {
+                embeds: [{
+                    title: `📍 ${userName} friss helyzete`,
+                    description: `**Cím:** ${address}\n**Pontosság:** ${accuracy} méter`,
+                    url: googleLink,
+                    color: 5763719, // Zöld szín
+                    image: { url: mapImage }, // Itt a kép a térképről
+                    timestamp: new Date().toISOString(),
+                    footer: { text: "SafeGroup v2026 - Folyamatos frissítés" }
+                }]
+            };
+
+            fetch(DISCORD_WEBHOOK, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
         function handleError(err) {
-            console.warn(`Hiba (${err.code}): ${err.message}`);
+            console.warn("GPS hiba: " + err.message);
+            document.getElementById("status").textContent = "Hiba történt a GPS lekérésekor.";
         }
     </script>
 </body>
-
 </html>
+
 
 
