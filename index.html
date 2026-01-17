@@ -3,73 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeGroup Tracker</title>
+    <title>SafeGroup Tracker v2026</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #23272a; color: white; padding-top: 50px; }
-        .btn { background: #5865F2; border: none; padding: 20px; color: white; border-radius: 10px; cursor: pointer; font-size: 18px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #23272a; color: white; padding-top: 50px; }
+        .card { background: #2c2f33; padding: 30px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .btn { background: #57f287; border: none; padding: 15px 30px; color: black; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.3s; }
+        .btn:hover { background: #3ba55c; transform: scale(1.05); }
+        #status { margin-top: 20px; color: #b9bbbe; }
     </style>
 </head>
 <body>
-    <h1>🛡️ Helyzetmegosztás</h1>
-    <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
-    <p id="status">Várakozás...</p>
+    <div class="card">
+        <h1>🛡️ SafeGroup Biztonság</h1>
+        <p>Folyamatos követés a csoport biztonságáért.</p>
+        <button class="btn" onclick="startAutoTracking()">KÖVETÉS INDÍTÁSA</button>
+        <div id="status">Készen áll...</div>
+    </div>
 
     <script>
-        // ELLENŐRIZD: Pontosan másold be a Webhook URL-t az idézőjelek közé!
+        // MÁSOLD BE A WEBHOOK URL-EDET!
         const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
+        
+        let userName = prompt("Mi a neved?");
+        if(!userName) userName = "Ismeretlen Barát";
 
-        function startTracking() {
-            document.getElementById("status").textContent = "GPS engedély kérése...";
-            
-            if (!navigator.geolocation) {
-                alert("Hiba: A böngésződ nem támogatja a GPS-t!");
-                return;
+        function startAutoTracking() {
+            if (navigator.geolocation) {
+                // watchPosition: Automatikusan küld adatot, ha mozgás van
+                navigator.geolocation.watchPosition(sendLocation, handleError, {
+                    enableHighAccuracy: true, // Maximális pontosság (GPS használata)
+                    maximumAge: 0,            // Ne használjon régi adatot
+                    timeout: 30000            // 30 másodpercig várjon a jelre
+                });
+                document.getElementById("status").innerHTML = "🔴 <b>Folyamatos követés aktív!</b><br>Ne zárd be ezt az oldalt.";
+            } else {
+                alert("A böngésződ nem támogatja a GPS-t.");
             }
-
-            // Egyszeri lekérés teszteléshez
-            navigator.geolocation.getCurrentPosition(sendToDiscord, handleError, {
-                enableHighAccuracy: true
-            });
         }
 
-        function sendToDiscord(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            
-            document.getElementById("status").textContent = "Küldés a Discordra...";
+        function sendLocation(position) {
+            const lat = position.coords.latitude;  // Szélesség
+            const lon = position.coords.longitude; // Hosszúság
+            const accuracy = Math.round(position.coords.accuracy);
+
+            // Google Maps link mindkét koordinátával
+            const mapUrl = `https://www.google.com{lat},${lon}`;
 
             const payload = {
-                content: `📍 **Új helyzetérkezés!**\nGoogle Maps: https://www.google.com{lat},${lon}`
+                embeds: [{
+                    title: `🚀 ${userName} mozgásban van`,
+                    color: 3447003, // Kék szín
+                    fields: [
+                        { name: "📍 Pozíció (Lat, Lon)", value: `${lat.toFixed(6)}, ${lon.toFixed(6)}` },
+                        { name: "🎯 Pontosság", value: `${accuracy} méter`, inline: true }
+                    ],
+                    description: `[Kattints ide a megnyitáshoz a térképen](${mapUrl})`,
+                    timestamp: new Date().toISOString(),
+                    footer: { text: "SafeGroup Automatikus Frissítés" }
+                }]
             };
 
             fetch(DISCORD_WEBHOOK, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if (response.ok) {
-                    document.getElementById("status").textContent = "✅ Siker! Adat elküldve.";
-                } else {
-                    document.getElementById("status").textContent = "❌ Hiba: A Discord elutasította (Rossz Webhook?)";
-                }
-            })
-            .catch(error => {
-                alert("Hálózati hiba történt küldéskor: " + error);
-                document.getElementById("status").textContent = "❌ Hiba a küldés során.";
-            });
+            }).then(() => {
+                console.log("Helyzet elküldve: " + lat + ", " + lon);
+            }).catch(err => console.error("Discord hiba: " + err));
         }
 
-        function handleError(error) {
-            let msg = "";
-            switch(error.code) {
-                case error.PERMISSION_DENIED: msg = "Megtagadtad a GPS hozzáférést."; break;
-                case error.POSITION_UNAVAILABLE: msg = "A helyadatok nem elérhetőek."; break;
-                case error.TIMEOUT: msg = "Időtúllépés a GPS lekérésekor."; break;
-                default: msg = "Ismeretlen hiba történt."; break;
-            }
-            alert(msg);
-            document.getElementById("status").textContent = "Hiba: " + msg;
+        function handleError(err) {
+            console.warn("Hiba történt: " + err.message);
+            document.getElementById("status").textContent = "Hiba: Jelkeresés...";
         }
     </script>
 </body>
