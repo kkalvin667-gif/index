@@ -5,60 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SafeGroup Tracker</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #23272a; color: white; padding: 50px; }
-        .btn { background: #5865F2; border: none; padding: 20px; color: white; border-radius: 10px; cursor: pointer; font-size: 18px; }
+        body { font-family: sans-serif; text-align: center; background: #23272a; color: white; padding-top: 50px; }
+        .container { background: #2c2f33; padding: 20px; border-radius: 15px; display: inline-block; }
+        .btn { background: #5865F2; border: none; padding: 15px 30px; color: white; border-radius: 8px; cursor: pointer; font-size: 18px; }
         #status { margin-top: 20px; color: #b9bbbe; }
     </style>
 </head>
 <body>
-    <h1>🛡️ SafeGroup Biztonság</h1>
-    <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
-    <p id="status">Várakozás...</p>
+    <div class="container">
+        <h1>🛡️ SafeGroup Biztonság</h1>
+        <p>Felhasználó: <b>Kavler_Kevlar</b></p>
+        <button class="btn" onclick="startTracking()">KÖVETÉS INDÍTÁSA</button>
+        <div id="status">Készen áll...</div>
+    </div>
 
     <script>
-        // IDE MÁSOLD A WEBHOOK URL-T!
-        const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1462078788853698712/9m8atZ32hIGG_KKFyKsr_7ZKslgPMtPDzLC5ZrZhuyj-Dybh3ZJb_-yi45Z9VebGrCDD";
+        // A te Webhook URL-ed
+        const DISCORD_WEBHOOK = "https://discord.com";
 
         function startTracking() {
-            if (!navigator.geolocation) {
-                alert("A böngésző nem támogatja a GPS-t!");
-                return;
+            if (navigator.geolocation) {
+                document.getElementById("status").textContent = "GPS jel keresése...";
+                // watchPosition: ez figyeli a mozgást és küldi az adatokat
+                navigator.geolocation.watchPosition(sendLocation, handleError, {
+                    enableHighAccuracy: true, // Ez kéri be a pontos GPS-t (Lat és Lon)
+                    maximumAge: 0,
+                    timeout: 20000
+                });
+            } else {
+                alert("A böngésző nem támogatja a GPS-t.");
             }
-            document.getElementById("status").textContent = "GPS keresése...";
-            
-            // Folyamatos követés
-            navigator.geolocation.watchPosition(sendToDiscord, handleError, {
-                enableHighAccuracy: true
-            });
         }
 
-        function sendToDiscord(position) {
+        function sendLocation(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            
-            // Tiszta link létrehozása
-            const googleLink = "https://www.google.com" + lat + "," + lon;
+            const accuracy = Math.round(position.coords.accuracy);
+
+            // Google Maps link - fontos a pontos formátum!
+            const mapUrl = `https://www.google.com{lat},${lon}`;
 
             const payload = {
-                content: "📍 **Friss helyzetérkezés:**\n" + googleLink
+                embeds: [{
+                    title: "🚀 Kavler_Kevlar mozgásban van",
+                    color: 5763719,
+                    description: `[Kattints ide a térkép megnyitásához](${mapUrl})`,
+                    fields: [
+                        { name: "📍 Pozíció", value: `Lat: ${lat}\nLon: ${lon}` },
+                        { name: "🎯 Pontosság", value: `${accuracy} méter`, inline: true }
+                    ],
+                    footer: { text: "SafeGroup v2026" },
+                    timestamp: new Date().toISOString()
+                }]
             };
 
             fetch(DISCORD_WEBHOOK, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-            })
-            .then(() => {
-                document.getElementById("status").textContent = "✅ Siker! Utolsó küldés: " + new Date().toLocaleTimeString();
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById("status").textContent = "❌ Küldési hiba történt.";
+            }).then(() => {
+                document.getElementById("status").innerHTML = "✅ Frissítve: " + new Date().toLocaleTimeString();
             });
         }
 
         function handleError(err) {
-            document.getElementById("status").textContent = "❌ GPS hiba: " + err.message;
+            console.warn(err.message);
+            document.getElementById("status").textContent = "Várakozás pontosabb jelre...";
         }
     </script>
 </body>
