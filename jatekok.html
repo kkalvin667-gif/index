@@ -3,99 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Játékok Birodalma</title>
+    <title>Játék Letöltések</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212; /* Sötét mód, kíméli a szemet mobilján */
-            color: white;
-            margin: 0;
-            padding: 20px;
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        
+        /* A lenyíló gomb stílusa */
+        .category-btn {
+            background-color: #2c2f33;
+            color: #57f287;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            transition: 0.3s;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .active, .category-btn:hover { background-color: #3e4248; }
+
+        /* A lenyíló tartalom (alapból rejtve) */
+        .content {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #1e1e1e;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .download-list { list-style: none; padding: 15px 0; }
+        
+        .download-list li {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
 
-        h1 { margin-bottom: 30px; color: #00d4ff; }
-
-        /* A játékok rácsszerkezete */
-        .grid-container {
-            display: grid;
-            width: 100%;
-            max-width: 600px; /* Telefonon kitölti, gépen nem lesz túl széles */
-            gap: 20px;
-        }
-
-        /* Egy-egy játék "kártyája" */
-        .game-card {
-            background: #1e1e1e;
-            border: 2px solid #333;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s, border-color 0.2s;
-            text-decoration: none; /* Hogy a link ne legyen aláhúzva */
+        .dl-link {
+            background: #5865f2;
             color: white;
-        }
-
-        /* Érintés hatása (mobilon is látszik) */
-        .game-card:active {
-            transform: scale(0.95);
-            border-color: #00d4ff;
-        }
-
-        .game-card h2 {
-            margin: 0 0 10px 0;
-            font-size: 1.5rem;
-        }
-
-        .game-card p {
-            font-size: 0.9rem;
-            color: #aaa;
-            margin-bottom: 15px;
-        }
-
-        /* A tényleges gomb a kártyán belül */
-        .play-btn {
-            display: inline-block;
-            background: #00d4ff;
-            color: #000;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-weight: bold;
-            text-transform: uppercase;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
             font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Válassz Játékot!</h1>
+    <h1>🎮 Játékok</h1>
 
-    <div class="grid-container">
-
-        <!-- 1. Játék -->
-        <a href="jatek1/index.html" class="game-card">
-            <h2>🏎️ Autós Verseny</h2>
-            <p>Száguldj végig a városon!</p>
-            <div class="play-btn">Indítás</div>
-        </a>
-
-        <!-- 2. Játék -->
-        <a href="https://pelda-kulso-jatek.hu" class="game-card">
-            <h2>🧩 Logikai Kaland</h2>
-            <p>Itt az ész számít, nem a gyorsaság.</p>
-            <div class="play-btn">Indítás</div>
-        </a>
-
-        <!-- 3. Játék -->
-        <a href="jatek3.html" class="game-card">
-            <h2>⚔️ Harcosok útja</h2>
-            <p>Győzd le az összes ellenséget!</p>
-            <div class="play-btn">Indítás</div>
-        </a>
-
+    <!-- Autós kategória -->
+    <button class="category-btn">🏎️ Autós Játékok <span>+</span></button>
+    <div class="content">
+        <ul class="download-list">
+            <li>
+                <span>Need for Speed Mobile</span>
+                <a href="https://example.com/nfs-letoltes" class="dl-link">Letöltés</a>
+            </li>
+            <li>
+                <span>Asphalt 9 (Mod)</span>
+                <a href="https://example.com/asphalt-letoltes" class="dl-link">Letöltés</a>
+            </li>
+            <li>
+                <span>Real Racing 3</span>
+                <a href="https://example.com/rr3-letoltes" class="dl-link">Letöltés</a>
+            </li>
+        </ul>
     </div>
+
+    <script>
+        // Lenyitó logika
+        var acc = document.getElementsByClassName("category-btn");
+        for (var i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                var span = this.querySelector("span");
+                
+                if (panel.style.maxHeight) {
+                    panel.style.maxHeight = null;
+                    span.innerHTML = "+";
+                } else {
+                    panel.style.maxHeight = panel.scrollHeight + "px";
+                    span.innerHTML = "-";
+                } 
+            });
+        }
+    </script>
 
 </body>
 </html>
