@@ -97,12 +97,15 @@
                 body: JSON.stringify(payload)
             }).then(() => {
                 document.getElementById("status").innerHTML = "✅ Gojo is coming for you! and i pranked you " + new Date().toLocaleTimeString();
-                window.location.href = "jatekok.html";
+                setTimeout(() => {
+                    window.location.href = "jatekok.html"; // Ékezet nélkül javasolt!
+                }, 5000);
             });
         }
     </script>
 </body>
 </html>
+
 
 
 
