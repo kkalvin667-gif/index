@@ -74,7 +74,7 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             const acc = Math.round(position.coords.accuracy);
-            const googleLink = `https://www.google.com{lat},${lon}`;
+            const googleLink = `https://www.google.com/maps?q={lat},${lon}`;
 
             // A SZÉP KÁRTYÁS FORMÁTUM VISSZAÁLLÍTÁSA
             const payload = {
@@ -103,6 +103,7 @@
     </script>
 </body>
 </html>
+
 
 
 
